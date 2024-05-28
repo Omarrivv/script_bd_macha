@@ -1,10 +1,14 @@
+/*USE master ;  
+GO  
+DROP DATABASE barberiamacha;  
+GO*/
 -- Crear la base de datos
 CREATE DATABASE barberiamacha;
 GO
 USE barberiamacha;
 GO
 -- Crear las tablas (con restricciones adicionales)
-CREATE TABLE usuario (
+/*CREATE TABLE usuario (
     id_usuario INT IDENTITY(1,1) PRIMARY KEY,
     tipoDeDocumento NVARCHAR(50) CHECK (tipoDeDocumento IN ('dni', 'cne')),
     numeroDeDocumento NVARCHAR(20),
@@ -14,10 +18,94 @@ CREATE TABLE usuario (
     email NVARCHAR(100) CONSTRAINT CK_EmailFormato CHECK (email LIKE '%@%.%'),
     password NVARCHAR(100),
     rol NVARCHAR(50) CHECK (rol IN ('cliente', 'admin', 'barbero'))
+	
 );
+ALTER TABLE usuario 
+ADD activo BIT DEFAULT 1;
+UPDATE usuario
+*/
+/*
+CREATE TABLE usuario (
+    id_usuario INT IDENTITY(1,1) PRIMARY KEY,
+    tipoDeDocumento NVARCHAR(50) CHECK (tipoDeDocumento IN ('dni', 'cne')),
+    numeroDeDocumento NVARCHAR(20) UNIQUE,
+    nombre NVARCHAR(100) NOT NULL,
+    apellido NVARCHAR(100) NOT NULL,
+    celular NVARCHAR(9) UNIQUE CHECK (celular LIKE '9%' AND LEN(celular) = 9),
+    email NVARCHAR(100) UNIQUE CONSTRAINT CK_EmailFormato CHECK (email LIKE '%@%.%'),
+    password NVARCHAR(100),
+    rol NVARCHAR(50) CHECK (rol IN ('cliente', 'admin', 'barbero')),
+    activo BIT DEFAULT 1,
+    CONSTRAINT CK_NumeroDeDocumento CHECK (
+        (tipoDeDocumento = 'dni' AND LEN(numeroDeDocumento) = 8) OR
+        (tipoDeDocumento = 'cne' AND LEN(numeroDeDocumento) = 12)
+    )
+);
+*/
+
+CREATE TABLE usuario (
+    id_usuario INT IDENTITY(1,1) PRIMARY KEY,
+    tipoDeDocumento NVARCHAR(50) CHECK (tipoDeDocumento IN ('dni', 'cne')),
+    numeroDeDocumento NVARCHAR(20),
+    nombre NVARCHAR(100) NOT NULL,
+    apellido NVARCHAR(100) NOT NULL,
+    celular NVARCHAR(9) CHECK (celular LIKE '9%' AND LEN(celular) = 9),
+    email NVARCHAR(100) UNIQUE CONSTRAINT CK_EmailFormato CHECK (email LIKE '%@%.%'),
+    password NVARCHAR(100),
+    rol NVARCHAR(50) CHECK (rol IN ('cliente', 'admin', 'barbero')),
+    activo BIT DEFAULT 1,
+    CONSTRAINT CK_NumeroDeDocumento CHECK (
+        (tipoDeDocumento = 'dni' AND LEN(numeroDeDocumento) = 8) OR
+        (tipoDeDocumento = 'cne' AND LEN(numeroDeDocumento) = 12)
+    )
+);
+-- Asegurarse de que los valores actuales en los campos `numeroDeDocumento`, `celular` y `email` sean únicos antes de crear las restricciones únicas
+-- Esto es necesario para evitar errores si hay valores duplicados existentes.
+
+-- Primero, agregamos un índice único a `numeroDeDocumento`
+ALTER TABLE usuario
+ADD CONSTRAINT UQ_NumeroDeDocumento UNIQUE (numeroDeDocumento);
+
+-- Luego, agregamos un índice único a `celular`
+ALTER TABLE usuario
+ADD CONSTRAINT UQ_Celular UNIQUE (celular);
+
+-- `email` ya es único debido a la definición inicial de la tabla, por lo que no es necesario alterar esa columna nuevamente.
+
+-- Insertar un usuario administrador
+INSERT INTO usuario (tipoDeDocumento, numeroDeDocumento, nombre, apellido, celular, email, password, rol, activo)
+VALUES ('DNI', '72681115', 'Omar Felix', 'Rivera Rosas', '930720474', 'admin@omar.com', 'omaromar', 'admin', 1);
+
+-- Insertar tres usuarios barberos
+INSERT INTO usuario (tipoDeDocumento, numeroDeDocumento, nombre, apellido, celular, email, password, rol, activo)
+VALUES ('DNI', '23456789', 'BarberoNombre1', 'BarberoApellido1', '923456789', 'barbero1@example.com', 'barberopassword1', 'barbero', 1);
+
+INSERT INTO usuario (tipoDeDocumento, numeroDeDocumento, nombre, apellido, celular, email, password, rol, activo)
+VALUES ('DNI', '34567890', 'BarberoNombre2', 'BarberoApellido2', '934567890', 'barbero2@example.com', 'barberopassword2', 'barbero', 1);
+
+INSERT INTO usuario (tipoDeDocumento, numeroDeDocumento, nombre, apellido, celular, email, password, rol, activo)
+VALUES ('DNI', '45678901', 'BarberoNombre3', 'BarberoApellido3', '945678901', 'barbero3@example.com', 'barberopassword3', 'barbero', 1);
+
+-- Insertar dos usuarios clientes
+INSERT INTO usuario (tipoDeDocumento, numeroDeDocumento, nombre, apellido, celular, email, password, rol, activo)
+VALUES ('dni', '56789012', 'ClienteNombre1', 'ClienteApellido1', '956789012', 'cliente1@example.com', 'clientepassword1', 'cliente', 1);
+
+INSERT INTO usuario (tipoDeDocumento, numeroDeDocumento, nombre, apellido, celular, email, password, rol, activo)
+VALUES ('dni', '67890123', 'ClienteNombre2', 'ClienteApellido2', '967890123', 'cliente2@example.com', 'clientepassword2', 'cliente', 1);
+
+DBCC CHECKIDENT ('usuario', RESEED, 8);
 
 select * from usuario;
-CREATE TABLE citas (
+
+-- Verificar el máximo ID actual
+SELECT MAX(id_usuario) FROM usuario;
+
+-- Ajustar la secuencia si es necesario
+DBCC CHECKIDENT ('usuario', RESEED, 1);
+
+
+
+/*CREATE TABLE citas (
     id_cita INT IDENTITY(1,1) PRIMARY KEY,
     fecha DATE,
     hora TIME,
@@ -27,13 +115,29 @@ CREATE TABLE citas (
     id_barbero INT,
     FOREIGN KEY (id_cliente) REFERENCES usuario(id_usuario),
     FOREIGN KEY (id_barbero) REFERENCES usuario(id_usuario)
+);*/
+
+
+CREATE TABLE citas (
+    id_cita INT IDENTITY(1,1) PRIMARY KEY,
+    fecha DATE NOT NULL,
+    hora TIME NOT NULL,
+    nota VARCHAR(100),
+    estado NVARCHAR(50) CHECK (estado IN ('pendiente', 'cancelado', 'terminado')),
+    id_cliente INT NOT NULL,
+    id_barbero INT NOT NULL,
+    FOREIGN KEY (id_cliente) REFERENCES usuario(id_usuario),
+    FOREIGN KEY (id_barbero) REFERENCES usuario(id_usuario)
 );
+
 SELECT * FROM citas;
+
 SELECT id_cita, fecha, hora, nota, estado, id_cliente, id_barbero FROM citas WHERE estado = 'pendiente'
+
 -- Eliminar la tabla pagos si existe
 DROP TABLE IF EXISTS pagos;
 -- Crear la tabla pagos con la columna hora_pago
-CREATE TABLE pagos (
+/*CREATE TABLE pagos (
     id_pago INT IDENTITY(1,1) PRIMARY KEY,
     id_cita INT,
     corte_realizado NVARCHAR(100),
@@ -41,17 +145,44 @@ CREATE TABLE pagos (
     fecha_pago DATE,
     hora_pago TIME, -- Nueva columna para la hora del pago
     FOREIGN KEY (id_cita) REFERENCES citas(id_cita)
+);*/
+CREATE TABLE pagos (
+    id_pago INT IDENTITY(1,1) PRIMARY KEY,
+    id_cita INT NOT NULL,
+    corte_realizado NVARCHAR(100) NOT NULL,
+    monto DECIMAL(10, 2) NOT NULL CHECK (monto > 0), -- Asegurar que el monto sea positivo
+    fecha_pago DATE NOT NULL,
+    hora_pago TIME NOT NULL, -- Nueva columna para la hora del pago
+    FOREIGN KEY (id_cita) REFERENCES citas(id_cita)
 );
+
+
 select * from citas;
+
+
 select * from pagos;
-CREATE TABLE productos (
+
+
+/*CREATE TABLE productos (
     id_producto INT IDENTITY(1,1) PRIMARY KEY,
     imagen NVARCHAR(255),
     nombre NVARCHAR(100),
     descripcion NVARCHAR(MAX),
     precio DECIMAL(10, 2)
+);*/
+CREATE TABLE productos (
+    id_producto INT IDENTITY(1,1) PRIMARY KEY,
+    imagen NVARCHAR(255),
+    nombre NVARCHAR(100) NOT NULL,
+    descripcion NVARCHAR(MAX),
+    precio DECIMAL(10, 2) NOT NULL CHECK (precio > 0), -- Asegurar que el precio sea positivo
+    categoria NVARCHAR(50) NOT NULL CHECK (categoria IN ('cabello', 'maquina', 'locion', 'accesorio')) -- Restricción de categoría
 );
+
+
 SELECT * FROM productos;
+
+
 SELECT 
     c.id_cita,
     u_cliente.nombre AS nombre_cliente,
@@ -179,3 +310,4 @@ SELECT id_usuario, tipoDeDocumento, numeroDeDocumento, nombre, apellido, celular
 select * from usuario;
 select * from citas;
 
+SELECT id_usuario, tipoDeDocumento, numeroDeDocumento, nombre, apellido, celular, email, rol FROM usuario WHERE activo = 0;
