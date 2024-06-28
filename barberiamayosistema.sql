@@ -152,7 +152,7 @@ CREATE TABLE pagos (
 select * from pagos;
 
 select * from sys.tables;
-
+-- no te olvides alterar la tabla 
 ALTER TABLE pagos
 ADD status INT DEFAULT 1;
 
